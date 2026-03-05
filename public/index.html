@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GreenPantry — Vegan Recipe Finder | Plant-Based Recipes from Your Pantry</title>
+  <meta name="description" content="Enter the ingredients you have and discover delicious 100% vegan recipes you can make right now. Free, AI-powered, and always plant-based." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="container header-inner">
+      <a href="/" class="logo">
+        <span class="logo-icon">🌿</span>
+        <span class="logo-text">GreenPantry</span>
+      </a>
+      <span class="header-tagline">100% plant-based recipes from your pantry</span>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-badge">🌱 AI-Powered Recipe Finder</div>
+      <h1>What's in your <span>pantry</span>?</h1>
+      <p class="hero-subtitle">
+        Enter the ingredients you have on hand and we'll find delicious vegan recipes you can make right now — or with just a few extras.
+      </p>
+    </section>
+
+    <!-- Search Card -->
+    <div class="search-card">
+      <div id="tag-container" class="tag-container"></div>
+
+      <div class="input-row">
+        <input
+          id="ingredient-input"
+          type="text"
+          placeholder="Type an ingredient and press Enter or comma…"
+          class="input-field"
+          autocomplete="off"
+        />
+        <button id="find-btn" onclick="findRecipes()" class="btn-primary">
+          Find Recipes
+        </button>
+      </div>
+
+      <div class="presets">
+        <p class="presets-label">Popular combos</p>
+        <div class="presets-row">
+          <button onclick="setPreset(['tomatoes','garlic','olive oil','basil','pasta'])" class="preset-btn">🍅 Tomatoes, garlic, pasta</button>
+          <button onclick="setPreset(['chickpeas','lemon','tahini','garlic','olive oil'])" class="preset-btn">🫘 Chickpeas, tahini, lemon</button>
+          <button onclick="setPreset(['tofu','soy sauce','ginger','garlic','sesame oil','broccoli'])" class="preset-btn">🥦 Tofu, broccoli, soy</button>
+          <button onclick="setPreset(['oats','banana','almond milk','chia seeds'])" class="preset-btn">🍌 Oats, banana, chia</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error banner -->
+    <div id="error-banner" class="banner banner-error">
+      <span class="banner-icon">⚠️</span>
+      <span id="error-text"></span>
+    </div>
+
+    <!-- Results -->
+    <div id="results" class="hidden">
+
+      <!-- Notes -->
+      <div id="notes-section" class="banner banner-notes">
+        <span class="banner-icon">💡</span>
+        <span id="notes-text"></span>
+      </div>
+
+      <!-- Fallback -->
+      <div id="fallback-banner" class="banner banner-fallback">
+        <span class="banner-icon">🔄</span>
+        <span>Our recipe service is temporarily busy. Please try again in a moment.</span>
+      </div>
+
+      <!-- Exact matches -->
+      <section id="exact-section" class="hidden" style="margin-bottom: 48px;">
+        <div class="section-header">
+          <h2 class="section-title">You can make right now</h2>
+          <span id="exact-count" class="section-count green"></span>
+        </div>
+        <div id="exact-grid" class="recipe-grid"></div>
+      </section>
+
+      <!-- Related recipes -->
+      <section id="related-section" class="hidden">
+        <div class="section-header">
+          <h2 class="section-title">Almost there</h2>
+          <span id="related-count" class="section-count amber"></span>
+        </div>
+        <p class="section-subtitle">Recipes needing just a few more ingredients</p>
+        <div id="related-grid" class="recipe-grid"></div>
+      </section>
+
+      <!-- Empty state -->
+      <div id="empty-state" class="empty-state">
+        <div class="empty-icon">🥬</div>
+        <p class="empty-title">No recipes found</p>
+        <p class="empty-text">Try adding more common ingredients like garlic, olive oil, or tomatoes.</p>
+      </div>
+    </div>
+
+    <!-- Loading skeletons -->
+    <div id="loading" class="hidden">
+      <div class="loading-section">
+        <div class="skeleton skeleton-heading"></div>
+        <div class="skeleton-grid">
+          <div class="skeleton skeleton-card"></div>
+          <div class="skeleton skeleton-card"></div>
+          <div class="skeleton skeleton-card"></div>
+        </div>
+      </div>
+      <div class="loading-section">
+        <div class="skeleton skeleton-heading"></div>
+        <div class="skeleton-grid">
+          <div class="skeleton skeleton-card"></div>
+          <div class="skeleton skeleton-card"></div>
+          <div class="skeleton skeleton-card"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Modal -->
+  <div id="modal" class="modal-overlay">
+    <div class="modal-backdrop" onclick="closeModal()"></div>
+    <div class="modal-panel">
+      <button onclick="closeModal()" class="modal-close">✕</button>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    🌱 <strong>GreenPantry</strong> — recipes powered by AI &nbsp;·&nbsp; 100% vegan &nbsp;·&nbsp; Always free
+  </footer>
+
+  <script>
+    // ─── State ─────────────────────────────────────────────────────
+    let tags = [];
+
+    // ─── Tag Input ─────────────────────────────────────────────────
+    const input = document.getElementById('ingredient-input');
+    const tagContainer = document.getElementById('tag-container');
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        addTag(input.value);
+      } else if (e.key === 'Backspace' && input.value === '' && tags.length > 0) {
+        removeTag(tags.length - 1);
+      }
+    });
+
+    input.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const text = e.clipboardData.getData('text');
+      text.split(/[,\n]+/).forEach(t => addTag(t));
+    });
+
+    function addTag(value) {
+      const clean = value.replace(/,/g, '').trim().toLowerCase();
+      if (!clean || tags.includes(clean) || tags.length >= 20) {
+        input.value = '';
+        return;
+      }
+      tags.push(clean);
+      renderTags();
+      input.value = '';
+    }
+
+    function removeTag(index) {
+      tags.splice(index, 1);
+      renderTags();
+    }
+
+    function renderTags() {
+      tagContainer.innerHTML = tags.map((t, i) => `
+        <span class="tag">
+          ${escHtml(t)}
+          <button onclick="removeTag(${i})" title="Remove">×</button>
+        </span>
+      `).join('');
+    }
+
+    function setPreset(ingredients) {
+      tags = [];
+      ingredients.forEach(i => { if (!tags.includes(i)) tags.push(i); });
+      renderTags();
+      findRecipes();
+    }
+
+    // ─── Find Recipes ──────────────────────────────────────────────
+    async function findRecipes() {
+      if (tags.length === 0) {
+        showError('Please add at least one ingredient.');
+        return;
+      }
+
+      showLoading(true);
+      hideError();
+      hideResults();
+
+      try {
+        const res = await fetch('/api/recipes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ingredients: tags }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          showError(data.error || 'Something went wrong. Please try again.');
+          return;
+        }
+
+        renderResults(data);
+      } catch (err) {
+        showError('Network error. Please check your connection and try again.');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    // ─── Render Results ────────────────────────────────────────────
+    function renderResults(data) {
+      const exact = data.exact_match_recipes || [];
+      const related = data.related_recipes || [];
+      const total = exact.length + related.length;
+
+      document.getElementById('results').classList.remove('hidden');
+
+      // Notes
+      const notesEl = document.getElementById('notes-section');
+      if (data.notes) {
+        document.getElementById('notes-text').textContent = data.notes;
+        notesEl.classList.add('visible');
+      } else {
+        notesEl.classList.remove('visible');
+      }
+
+      // Fallback
+      const fallbackEl = document.getElementById('fallback-banner');
+      if (data._fallback) {
+        fallbackEl.classList.add('visible');
+      } else {
+        fallbackEl.classList.remove('visible');
+      }
+
+      // Empty state
+      const emptyEl = document.getElementById('empty-state');
+      if (total === 0) {
+        emptyEl.classList.add('visible');
+      } else {
+        emptyEl.classList.remove('visible');
+      }
+
+      // Exact matches
+      const exactSection = document.getElementById('exact-section');
+      const exactGrid = document.getElementById('exact-grid');
+      if (exact.length > 0) {
+        document.getElementById('exact-count').textContent = exact.length;
+        exactGrid.innerHTML = exact.map((r, i) => recipeCard(r, i, false)).join('');
+        exactSection.classList.remove('hidden');
+      } else {
+        exactSection.classList.add('hidden');
+      }
+
+      // Related
+      const relatedSection = document.getElementById('related-section');
+      const relatedGrid = document.getElementById('related-grid');
+      if (related.length > 0) {
+        document.getElementById('related-count').textContent = related.length;
+        relatedGrid.innerHTML = related.map((r, i) => recipeCard(r, i, true)).join('');
+        relatedSection.classList.remove('hidden');
+      } else {
+        relatedSection.classList.add('hidden');
+      }
+
+      // Store for modal
+      window._recipes = { exact, related };
+
+      // Staggered card animations
+      requestAnimationFrame(() => {
+        document.querySelectorAll('.recipe-card').forEach((el, i) => {
+          el.style.animationDelay = `${i * 80}ms`;
+          el.classList.add('fade-up');
+        });
+      });
+
+      document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function recipeCard(recipe, index, isRelated) {
+      const diffClass = {
+        Easy: 'diff-easy',
+        Medium: 'diff-medium',
+        Hard: 'diff-hard',
+      }[recipe.difficulty] || 'diff-easy';
+
+      const missingBadge = isRelated && recipe.missing_ingredients?.length
+        ? `<div class="missing-badges">
+            ${recipe.missing_ingredients.map(m => `<span class="missing-badge">+ ${escHtml(m)}</span>`).join('')}
+           </div>`
+        : '';
+
+      const cardTags = (recipe.tags || []).slice(0, 3).map(t =>
+        `<span class="card-tag-pill">· ${escHtml(t)}</span>`
+      ).join('');
+
+      return `
+        <div class="recipe-card"
+             onclick="openModal('${isRelated ? 'related' : 'exact'}', ${index})">
+          <div class="card-img-wrapper">
+            <img src="${escAttr(recipe.image || 'https://picsum.photos/600/400')}"
+                 alt="${escAttr(recipe.name)}"
+                 class="card-img"
+                 loading="lazy"
+                 onerror="this.src='https://picsum.photos/seed/${encodeURIComponent(recipe.name)}/600/400'" />
+            <span class="card-difficulty ${diffClass}">
+              ${escHtml(recipe.difficulty || 'Easy')}
+            </span>
+          </div>
+          <div class="card-body">
+            <h3 class="card-title">${escHtml(recipe.name)}</h3>
+            <p class="card-desc">${escHtml(recipe.description)}</p>
+            <div class="card-meta">
+              <span>⏱ ${escHtml(recipe.prep_time || '—')} prep</span>
+              <span>🔥 ${escHtml(recipe.cook_time || '—')}</span>
+              <span>👤 ${recipe.servings || 2}</span>
+              <div class="card-tags">${cardTags}</div>
+            </div>
+            ${missingBadge}
+          </div>
+        </div>
+      `;
+    }
+
+    // ─── Modal ─────────────────────────────────────────────────────
+    function openModal(type, index) {
+      const recipe = type === 'exact'
+        ? window._recipes.exact[index]
+        : window._recipes.related[index];
+      if (!recipe) return;
+
+      const missingSection = recipe.missing_ingredients?.length ? `
+        <div class="modal-missing-section">
+          <p class="modal-section-label amber">You'll also need</p>
+          <div class="modal-missing-badges">
+            ${recipe.missing_ingredients.map(m => `<span class="modal-missing-badge">+ ${escHtml(m)}</span>`).join('')}
+          </div>
+        </div>` : '';
+
+      document.getElementById('modal-content').innerHTML = `
+        <img src="${escAttr(recipe.image || 'https://picsum.photos/600/400')}"
+             alt="${escAttr(recipe.name)}"
+             class="modal-img"
+             onerror="this.src='https://picsum.photos/seed/${encodeURIComponent(recipe.name)}/600/400'" />
+        <div class="modal-body">
+          <div class="modal-title-row">
+            <h2 class="modal-title">${escHtml(recipe.name)}</h2>
+            <span class="card-difficulty ${({'Easy':'diff-easy','Medium':'diff-medium','Hard':'diff-hard'})[recipe.difficulty] || 'diff-easy'}" style="flex-shrink:0;">
+              ${escHtml(recipe.difficulty || 'Easy')}
+            </span>
+          </div>
+          <p class="modal-desc">${escHtml(recipe.description)}</p>
+
+          <div class="modal-stats">
+            <div class="stat-box"><div class="stat-value">${escHtml(recipe.prep_time || '—')}</div><div class="stat-label">Prep</div></div>
+            <div class="stat-box"><div class="stat-value">${escHtml(recipe.cook_time || '—')}</div><div class="stat-label">Cook</div></div>
+            <div class="stat-box"><div class="stat-value">${recipe.servings || 2}</div><div class="stat-label">Servings</div></div>
+          </div>
+
+          ${missingSection}
+
+          <div>
+            <p class="modal-section-label">Ingredients</p>
+            <ul class="ingredient-list">
+              ${(recipe.ingredients || []).map(i => `
+                <li>
+                  <span class="check">✓</span>
+                  ${escHtml(i)}
+                </li>`).join('')}
+            </ul>
+          </div>
+
+          <div>
+            <p class="modal-section-label">Instructions</p>
+            <ol class="instruction-list">
+              ${(recipe.instructions || []).map((step, i) => `
+                <li>
+                  <span class="step-number">${i + 1}</span>
+                  <span class="step-text">${escHtml(step)}</span>
+                </li>`).join('')}
+            </ol>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('modal').classList.add('visible');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.remove('visible');
+      document.body.style.overflow = '';
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    // ─── UI Helpers ────────────────────────────────────────────────
+    function showLoading(on) {
+      document.getElementById('loading').classList.toggle('hidden', !on);
+      document.getElementById('find-btn').disabled = on;
+    }
+
+    function hideResults() {
+      document.getElementById('results').classList.add('hidden');
+    }
+
+    function showError(msg) {
+      document.getElementById('error-text').textContent = msg;
+      const banner = document.getElementById('error-banner');
+      banner.classList.add('visible');
+    }
+
+    function hideError() {
+      document.getElementById('error-banner').classList.remove('visible');
+    }
+
+    function escHtml(str) {
+      return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function escAttr(str) {
+      return String(str || '').replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>
