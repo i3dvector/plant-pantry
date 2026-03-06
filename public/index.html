@@ -40,7 +40,7 @@
         <input
           id="ingredient-input"
           type="text"
-          placeholder="Type an ingredient and press Enter or comma…"
+          placeholder="e.g. tomato, garlic, pasta…"
           class="input-field"
           autocomplete="off"
         />
@@ -148,25 +148,43 @@
   <script>
     // ─── State ─────────────────────────────────────────────────────
     let tags = [];
+    let autoSearchTimer = null;
 
     // ─── Tag Input ─────────────────────────────────────────────────
     const input = document.getElementById('ingredient-input');
     const tagContainer = document.getElementById('tag-container');
 
     input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ',') {
+      if (e.key === ',' || (e.key === 'Enter' && input.value.trim())) {
+        // Comma or Enter with text → add tag
         e.preventDefault();
         addTag(input.value);
+      } else if (e.key === 'Enter' && !input.value.trim() && tags.length > 0) {
+        // Enter on empty input → search now
+        e.preventDefault();
+        findRecipes();
       } else if (e.key === 'Backspace' && input.value === '' && tags.length > 0) {
         removeTag(tags.length - 1);
       }
     });
+
+    // Stop auto-search timer while user is actively typing
+    input.addEventListener('input', () => clearTimeout(autoSearchTimer));
 
     input.addEventListener('paste', (e) => {
       e.preventDefault();
       const text = e.clipboardData.getData('text');
       text.split(/[,\n]+/).forEach(t => addTag(t));
     });
+
+    function scheduleAutoSearch() {
+      clearTimeout(autoSearchTimer);
+      autoSearchTimer = setTimeout(() => {
+        if (tags.length > 0 && !document.getElementById('find-btn').disabled) {
+          findRecipes();
+        }
+      }, 2000);
+    }
 
     function addTag(value) {
       const clean = value.replace(/,/g, '').trim().toLowerCase();
@@ -177,11 +195,13 @@
       tags.push(clean);
       renderTags();
       input.value = '';
+      scheduleAutoSearch();
     }
 
     function removeTag(index) {
       tags.splice(index, 1);
       renderTags();
+      if (tags.length === 0) clearTimeout(autoSearchTimer);
     }
 
     function renderTags() {
@@ -202,6 +222,16 @@
 
     // ─── Find Recipes ──────────────────────────────────────────────
     async function findRecipes() {
+      clearTimeout(autoSearchTimer);
+
+      // Auto-add whatever the user left typed in the input
+      const pending = input.value.replace(/,/g, '').trim().toLowerCase();
+      if (pending && !tags.includes(pending) && tags.length < 20) {
+        tags.push(pending);
+        renderTags();
+        input.value = '';
+      }
+
       if (tags.length === 0) {
         showError('Please add at least one ingredient.');
         return;
