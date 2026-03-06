@@ -112,12 +112,11 @@
 
     <!-- Loading skeletons -->
     <div id="loading" class="hidden">
-      <div class="loading-section">
-        <div class="skeleton skeleton-heading"></div>
-        <div class="skeleton-grid">
-          <div class="skeleton skeleton-card"></div>
-          <div class="skeleton skeleton-card"></div>
-          <div class="skeleton skeleton-card"></div>
+      <div class="search-status">
+        <div class="search-spinner"></div>
+        <div>
+          <p id="search-status-text" class="search-status-title">Finding vegan recipes…</p>
+          <p class="search-status-sub">This usually takes 5–10 seconds</p>
         </div>
       </div>
       <div class="loading-section">
@@ -140,6 +139,8 @@
       <div id="modal-content"></div>
     </div>
   </div>
+
+  <div id="toast" class="toast"></div>
 
   <footer class="footer">
     🌱 <strong>GreenPantry</strong> — recipes powered by AI &nbsp;·&nbsp; 100% vegan &nbsp;·&nbsp; Always free
@@ -353,25 +354,25 @@
         <div class="recipe-card"
              onclick="openModal('${isRelated ? 'related' : 'exact'}', ${index})">
           <div class="card-img-wrapper">
-            <img src="${escAttr(recipe.image || 'https://picsum.photos/600/400')}"
+            <img src="${escAttr(recipe.image || '')}"
                  alt="${escAttr(recipe.name)}"
                  class="card-img"
                  loading="lazy"
                  onerror="imgError(this)" />
-            <span class="card-difficulty ${diffClass}">
-              ${escHtml(recipe.difficulty || 'Easy')}
-            </span>
           </div>
           <div class="card-body">
-            <h3 class="card-title">${escHtml(recipe.name)}</h3>
+            <div class="card-header">
+              <h3 class="card-title">${escHtml(recipe.name)}</h3>
+              <span class="card-difficulty ${diffClass}">${escHtml(recipe.difficulty || 'Easy')}</span>
+            </div>
             <p class="card-desc">${escHtml(recipe.description)}</p>
             <div class="card-meta">
               <span>⏱ ${escHtml(recipe.prep_time || '—')} prep</span>
               <span>🔥 ${escHtml(recipe.cook_time || '—')}</span>
-              <span>👤 ${recipe.servings || 2}</span>
-              <div class="card-tags">${cardTags}</div>
+              <span>👤 ${recipe.servings || 2} servings</span>
             </div>
             ${missingBadge}
+            ${cardTags ? `<div class="card-tags">${cardTags}</div>` : ''}
           </div>
         </div>
       `;
@@ -392,18 +393,17 @@
           </div>
         </div>` : '';
 
+      const diffClass = ({'Easy':'diff-easy','Medium':'diff-medium','Hard':'diff-hard'})[recipe.difficulty] || 'diff-easy';
+      window._currentRecipe = recipe;
+
       document.getElementById('modal-content').innerHTML = `
-        <img src="${escAttr(recipe.image || 'https://picsum.photos/600/400')}"
+        <img src="${escAttr(recipe.image || '')}"
              alt="${escAttr(recipe.name)}"
              class="modal-img"
              onerror="imgError(this)" />
         <div class="modal-body">
-          <div class="modal-title-row">
-            <h2 class="modal-title">${escHtml(recipe.name)}</h2>
-            <span class="card-difficulty ${({'Easy':'diff-easy','Medium':'diff-medium','Hard':'diff-hard'})[recipe.difficulty] || 'diff-easy'}" style="flex-shrink:0;">
-              ${escHtml(recipe.difficulty || 'Easy')}
-            </span>
-          </div>
+          <span class="card-difficulty ${diffClass} modal-difficulty">${escHtml(recipe.difficulty || 'Easy')}</span>
+          <h2 class="modal-title">${escHtml(recipe.name)}</h2>
           <p class="modal-desc">${escHtml(recipe.description)}</p>
 
           <div class="modal-stats">
@@ -435,6 +435,8 @@
                 </li>`).join('')}
             </ol>
           </div>
+
+          <button onclick="shareRecipe()" class="share-btn">📤 Share Recipe</button>
         </div>
       `;
 
@@ -455,6 +457,55 @@
     function showLoading(on) {
       document.getElementById('loading').classList.toggle('hidden', !on);
       document.getElementById('find-btn').disabled = on;
+      if (on) {
+        const n = tags.length;
+        document.getElementById('search-status-text').textContent =
+          `Finding vegan recipes with ${n} ingredient${n !== 1 ? 's' : ''}…`;
+      }
+    }
+
+    // ─── Share Recipe ───────────────────────────────────────────────
+    async function shareRecipe() {
+      const recipe = window._currentRecipe;
+      if (!recipe) return;
+
+      const text = [
+        `🌱 ${recipe.name}`,
+        '',
+        recipe.description,
+        '',
+        'Ingredients:',
+        ...(recipe.ingredients || []).map(i => `• ${i}`),
+        '',
+        'Instructions:',
+        ...(recipe.instructions || []).map((s, i) => `${i + 1}. ${s}`),
+        '',
+        '— Found on GreenPantry',
+      ].join('\n');
+
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: recipe.name, text });
+        } catch (err) {
+          if (err.name !== 'AbortError') showToast('Could not share');
+        }
+      } else {
+        try {
+          await navigator.clipboard.writeText(text);
+          showToast('📋 Recipe copied to clipboard!');
+        } catch {
+          showToast('Could not copy — try selecting and copying manually');
+        }
+      }
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('visible');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove('visible'), 3000);
     }
 
     function hideResults() {
