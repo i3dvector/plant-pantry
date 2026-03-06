@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GreenPantry — Vegan Recipe Finder | Plant-Based Recipes from Your Pantry</title>
-  <meta name="description" content="Enter the ingredients you have and discover delicious 100% vegan recipes you can make right now. Free, AI-powered, and always plant-based." />
+  <meta name="description" content="Enter the ingredients you have and discover delicious 100% vegan recipes you can make right now. Free, plant-based, and always delicious." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -27,7 +27,7 @@
 
     <!-- Hero -->
     <section class="hero">
-      <div class="hero-badge">🌱 AI-Powered Recipe Finder</div>
+      <div class="hero-badge">🌱 Plant-Based Recipe Finder</div>
       <h1>What's in your <span>pantry</span>?</h1>
       <p class="hero-subtitle">
         Enter the ingredients you have on hand and we'll find delicious vegan recipes you can make right now — or with just a few extras.
@@ -115,7 +115,7 @@
       <div class="search-status">
         <div class="search-spinner"></div>
         <div>
-          <p id="search-status-text" class="search-status-title">Finding vegan recipes…</p>
+          <p id="search-status-text" class="search-status-title">Simmering up ideas…</p>
           <p class="search-status-sub">This usually takes 5–10 seconds</p>
         </div>
       </div>
@@ -143,7 +143,7 @@
   <div id="toast" class="toast"></div>
 
   <footer class="footer">
-    🌱 <strong>GreenPantry</strong> — recipes powered by AI &nbsp;·&nbsp; 100% vegan &nbsp;·&nbsp; Always free
+    🌱 <strong>GreenPantry</strong> — smart plant-based recipes &nbsp;·&nbsp; 100% vegan &nbsp;·&nbsp; Always free
   </footer>
 
   <script>
@@ -460,7 +460,7 @@
       if (on) {
         const n = tags.length;
         document.getElementById('search-status-text').textContent =
-          `Finding vegan recipes with ${n} ingredient${n !== 1 ? 's' : ''}…`;
+          `Simmering up recipes from your ${n} ingredient${n !== 1 ? 's' : ''}…`;
       }
     }
 
