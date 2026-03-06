@@ -155,6 +155,12 @@ breaker.on('close', () => console.info('[circuit] Closed — Claude API recovere
 // Simple in-memory image cache (query → URL)
 const imageCache = new Map();
 
+function queryHash(s) {
+  let h = 0;
+  for (const c of s) h = (Math.imul(31, h) + c.charCodeAt(0)) | 0;
+  return Math.abs(h) % 10000;
+}
+
 async function fetchUnsplashImage(query) {
   if (!process.env.UNSPLASH_ACCESS_KEY) return null;
   try {
@@ -174,7 +180,7 @@ async function fetchUnsplashImage(query) {
 async function fetchPexelsImage(query) {
   if (!process.env.PEXELS_API_KEY) return null;
   try {
-    const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(query + ' vegan')}&per_page=1&orientation=landscape`;
+    const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(query + ' vegan food')}&per_page=1&orientation=landscape`;
     const res = await fetch(url, {
       headers: { Authorization: process.env.PEXELS_API_KEY },
       signal: AbortSignal.timeout(5000),
@@ -193,7 +199,7 @@ async function getImage(query) {
   let url =
     (await fetchUnsplashImage(query)) ||
     (await fetchPexelsImage(query)) ||
-    `https://picsum.photos/seed/${encodeURIComponent(query.replace(/\s+/g, '-'))}/600/400`;
+    `https://loremflickr.com/600/400/food?lock=${queryHash(query)}`;
 
   if (imageCache.size > 500) imageCache.delete(imageCache.keys().next().value);
   imageCache.set(query, url);

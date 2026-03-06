@@ -36,8 +36,6 @@
 
     <!-- Search Card -->
     <div class="search-card">
-      <div id="tag-container" class="tag-container"></div>
-
       <div class="input-row">
         <input
           id="ingredient-input"
@@ -50,6 +48,8 @@
           Find Recipes
         </button>
       </div>
+
+      <div id="tag-container" class="tag-container"></div>
 
       <div class="presets">
         <p class="presets-label">Popular combos</p>
@@ -327,7 +327,7 @@
                  alt="${escAttr(recipe.name)}"
                  class="card-img"
                  loading="lazy"
-                 onerror="this.src='https://picsum.photos/seed/${encodeURIComponent(recipe.name)}/600/400'" />
+                 onerror="imgError(this)" />
             <span class="card-difficulty ${diffClass}">
               ${escHtml(recipe.difficulty || 'Easy')}
             </span>
@@ -366,7 +366,7 @@
         <img src="${escAttr(recipe.image || 'https://picsum.photos/600/400')}"
              alt="${escAttr(recipe.name)}"
              class="modal-img"
-             onerror="this.src='https://picsum.photos/seed/${encodeURIComponent(recipe.name)}/600/400'" />
+             onerror="imgError(this)" />
         <div class="modal-body">
           <div class="modal-title-row">
             <h2 class="modal-title">${escHtml(recipe.name)}</h2>
@@ -439,6 +439,12 @@
 
     function hideError() {
       document.getElementById('error-banner').classList.remove('visible');
+    }
+
+    function imgError(el) {
+      const seed = Math.abs([...el.alt].reduce((a, c) => Math.imul(31, a) + c.charCodeAt(0) | 0, 0)) % 10000;
+      el.src = `https://loremflickr.com/600/400/food?lock=${seed}`;
+      el.onerror = null;
     }
 
     function escHtml(str) {

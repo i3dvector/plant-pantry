@@ -252,7 +252,12 @@ body {
   flex-wrap: wrap;
   gap: 8px;
   min-height: 36px;
-  margin-bottom: 16px;
+  margin-top: 14px;
+}
+
+.tag-container:empty {
+  min-height: 0;
+  margin-top: 0;
 }
 
 .tag {
@@ -868,15 +873,56 @@ body {
 /* ── Responsive ───────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .container { padding: 0 16px; }
-  .hero { padding: 36px 0 20px; }
-  .hero h1 { font-size: 1.75rem; }
-  .hero-subtitle { font-size: 15px; }
-  .search-card { padding: 20px; }
-  .input-row { flex-direction: column; }
-  .btn-primary { width: 100%; text-align: center; }
+
+  /* Header */
   .header-tagline { display: none; }
-  .modal-body { padding: 20px; }
-  .modal-stats { flex-direction: column; }
+  .logo-text { font-size: 18px; }
+
+  /* Hero */
+  .hero { padding: 28px 0 18px; }
+  .hero h1 { font-size: 1.75rem; letter-spacing: -0.5px; }
+  .hero-subtitle { font-size: 14px; }
+  .hero-badge { font-size: 11px; }
+
+  /* Search card */
+  .search-card { padding: 16px; border-radius: var(--radius-xl); }
+  .input-row { flex-direction: column; gap: 10px; }
+  .input-field { padding: 13px 16px; font-size: 16px; /* 16px prevents iOS zoom */ }
+  .btn-primary { width: 100%; text-align: center; padding: 14px; }
+
+  /* Presets */
+  .presets { margin-top: 14px; }
+  .preset-btn { font-size: 11px; padding: 8px 12px; }
+
+  /* Section headings */
+  .section-title { font-size: 20px; }
+
+  /* Recipe grid */
   .recipe-grid { grid-template-columns: 1fr; }
   .skeleton-grid { grid-template-columns: 1fr; }
+
+  /* Card meta — allow wrapping */
+  .card-meta { flex-wrap: wrap; gap: 8px 12px; }
+  .card-tags { margin-left: 0; }
+
+  /* Modal — bottom sheet style */
+  .modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .modal-panel {
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+    max-height: 92vh;
+    max-width: 100%;
+    width: 100%;
+  }
+  .modal-img {
+    height: 180px;
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+  }
+  .modal-body { padding: 20px 18px 32px; }
+  .modal-title { font-size: 20px; }
+  .modal-stats { flex-direction: row; flex-wrap: wrap; gap: 8px; }
+  .stat-box { flex: 1; min-width: 80px; padding: 8px 12px; }
+  .modal-close { top: 12px; right: 12px; }
 }
